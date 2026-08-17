@@ -1,6 +1,7 @@
 package jp.co.sss.lms.service;
 
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -332,6 +333,19 @@ public class StudentAttendanceService {
 		}
 		// 完了メッセージ
 		return messageUtil.getMessage(Constants.PROP_KEY_ATTENDANCE_UPDATE_NOTICE);
+	}
+	
+	
+	public boolean notEnterCheck() throws ParseException{
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		String today = sdf.format(new Date());
+		
+		Integer lmsUserId = loginUserDto.getLmsUserId();
+		Short deleteFlg = 0;
+		
+		int count = tStudentAttendanceMapper.notEnterCount(lmsUserId, deleteFlg, today);
+		
+		return count > 0;
 	}
 
 }
