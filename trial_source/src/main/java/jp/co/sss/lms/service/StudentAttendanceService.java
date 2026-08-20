@@ -4,7 +4,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -215,6 +217,19 @@ public class StudentAttendanceService {
 			List<AttendanceManagementDto> attendanceManagementDtoList) {
 
 		AttendanceForm attendanceForm = new AttendanceForm();
+		
+		Map<Integer, String> hourMap = new LinkedHashMap<>();
+		hourMap.put(null, "");
+		for(int i = 0; i < 24; i++) {
+			hourMap.put(i, String.format("%02d", i));
+		}
+		
+		Map<Integer, String> minuteMap = new LinkedHashMap<>();
+		minuteMap.put(null, "");
+		for(int i = 0; i < 60; i++) {
+			minuteMap.put(i, String.format("%02d", i));
+		}
+		
 		attendanceForm.setAttendanceList(new ArrayList<DailyAttendanceForm>());
 		attendanceForm.setLmsUserId(loginUserDto.getLmsUserId());
 		attendanceForm.setUserName(loginUserDto.getUserName());
@@ -239,6 +254,15 @@ public class StudentAttendanceService {
 			dailyAttendanceForm
 					.setTrainingStartTime(attendanceManagementDto.getTrainingStartTime());
 			dailyAttendanceForm.setTrainingEndTime(attendanceManagementDto.getTrainingEndTime());
+			
+			String startTime = attendanceManagementDto.getTrainingStartTime();
+			if(startTime != null && !startTime.isEmpty() && startTime.contains(":")) {
+				String[] startArr = startTime.split(":");
+			;
+			}
+			
+			
+			
 			if (attendanceManagementDto.getBlankTime() != null) {
 				dailyAttendanceForm.setBlankTime(attendanceManagementDto.getBlankTime());
 				dailyAttendanceForm.setBlankTimeValue(String.valueOf(
