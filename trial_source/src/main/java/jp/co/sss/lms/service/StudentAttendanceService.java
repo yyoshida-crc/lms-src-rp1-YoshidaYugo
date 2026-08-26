@@ -217,19 +217,24 @@ public class StudentAttendanceService {
 			List<AttendanceManagementDto> attendanceManagementDtoList) {
 
 		AttendanceForm attendanceForm = new AttendanceForm();
-		
+
+		// Task.26:　時間マップ（00～23）を生成
 		Map<Integer, String> hourMap = new LinkedHashMap<>();
 		hourMap.put(null, "");
-		for(int i = 0; i < 24; i++) {
+		for (int i = 0; i < 24; i++) {
 			hourMap.put(i, String.format("%02d", i));
 		}
-		
+
+		// Task.26:　分マップ（00～59）を生成
 		Map<Integer, String> minuteMap = new LinkedHashMap<>();
 		minuteMap.put(null, "");
-		for(int i = 0; i < 60; i++) {
+		for (int i = 0; i < 60; i++) {
 			minuteMap.put(i, String.format("%02d", i));
 		}
 		
+		attendanceForm.setHourMap(hourMap);
+	    attendanceForm.setMinuteMap(minuteMap);
+
 		attendanceForm.setAttendanceList(new ArrayList<DailyAttendanceForm>());
 		attendanceForm.setLmsUserId(loginUserDto.getLmsUserId());
 		attendanceForm.setUserName(loginUserDto.getUserName());
@@ -254,15 +259,23 @@ public class StudentAttendanceService {
 			dailyAttendanceForm
 					.setTrainingStartTime(attendanceManagementDto.getTrainingStartTime());
 			dailyAttendanceForm.setTrainingEndTime(attendanceManagementDto.getTrainingEndTime());
-			
+
+			//Task.26:　出勤時刻文字列("HH:mm")を「時」と「分」に分解してセット
 			String startTime = attendanceManagementDto.getTrainingStartTime();
-			if(startTime != null && !startTime.isEmpty() && startTime.contains(":")) {
+			if (startTime != null && !startTime.isEmpty() && startTime.contains(":")) {
 				String[] startArr = startTime.split(":");
-			;
+				dailyAttendanceForm.setTrainingStartTimeHour(Integer.parseInt(startArr[0]));
+				dailyAttendanceForm.setTrainingStartTimeMinute(Integer.parseInt(startArr[1]));
 			}
-			
-			
-			
+
+			// Task.26: 退勤時刻文字列("HH:mm")を「時」と「分」に分解してセット
+			String endTime = attendanceManagementDto.getTrainingEndTime();
+			if (endTime != null && !endTime.isEmpty() && endTime.contains(":")) {
+				String[] endArr = endTime.split(":");
+				dailyAttendanceForm.setTrainingEndTimeHour(Integer.parseInt(endArr[0]));
+				dailyAttendanceForm.setTrainingEndTimeMinute(Integer.parseInt(endArr[1]));
+			}
+
 			if (attendanceManagementDto.getBlankTime() != null) {
 				dailyAttendanceForm.setBlankTime(attendanceManagementDto.getBlankTime());
 				dailyAttendanceForm.setBlankTimeValue(String.valueOf(
@@ -280,6 +293,40 @@ public class StudentAttendanceService {
 		}
 
 		return attendanceForm;
+	}
+
+	/**
+	 * Task.26: 入力された出退勤の「時」「分」を hh:mm 形式の文字列に変換してセットする
+	 * 
+	 * @param attendanceForm 勤怠フォーム
+	 */
+	public void formatConversion(AttendanceForm attendanceForm) {
+		if (attendanceForm == null || attendanceForm.getAttendanceList() == null) {
+			return;
+		}
+
+		for (DailyAttendanceForm dailyForm : attendanceForm.getAttendanceList()) {
+
+			// 出勤時間の「時」「分」が共に入力されている場合 %02d:%02d 形式でセット
+			if (dailyForm.getTrainingStartTimeHour() != null && dailyForm.getTrainingStartTimeMinute() != null) {
+				String formattedStartTime = String.format("%02d:%02d",
+						dailyForm.getTrainingStartTimeHour(),
+						dailyForm.getTrainingStartTimeMinute());
+				dailyForm.setTrainingStartTime(formattedStartTime);
+			} else {
+				dailyForm.setTrainingStartTime("");
+			}
+
+			// 退勤時間の「時」「分」が共に入力されている場合 %02d:%02d 形式でセット
+			if (dailyForm.getTrainingEndTimeHour() != null && dailyForm.getTrainingEndTimeMinute() != null) {
+				String formattedEndTime = String.format("%02d:%02d",
+						dailyForm.getTrainingEndTimeHour(),
+						dailyForm.getTrainingEndTimeMinute());
+				dailyForm.setTrainingEndTime(formattedEndTime);
+			} else {
+				dailyForm.setTrainingEndTime("");
+			}
+		}
 	}
 
 	/**
@@ -358,17 +405,16 @@ public class StudentAttendanceService {
 		// 完了メッセージ
 		return messageUtil.getMessage(Constants.PROP_KEY_ATTENDANCE_UPDATE_NOTICE);
 	}
-	
-	
-	public boolean notEnterCheck() throws ParseException{
+
+	public boolean notEnterCheck() throws ParseException {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-		String today = sdf.format(new Date());
-		
+		String trainingDate = sdf.format(new Date());
+
 		Integer lmsUserId = loginUserDto.getLmsUserId();
 		Short deleteFlg = 0;
-		
-		int count = tStudentAttendanceMapper.notEnterCount(lmsUserId, deleteFlg, today);
-		
+
+		int count = tStudentAttendanceMapper.notEnterCount(lmsUserId, deleteFlg, trainingDate);
+
 		return count > 0;
 	}
 

@@ -29,7 +29,7 @@
 							<th class="w300">コース内容</th>
 							<th class="w70">出勤</th>
 							<th class="w70">退勤</th>
-							<th class="w80">中抜け時間</th>
+							<th class="w120">中抜け時間</th>
 							<th class="w70">ステータス</th>
 							<th class="w240">備考</th>
 						</tr>
@@ -47,15 +47,39 @@
 								</th:block>
 								<td class="w140">[[${dailyAttendanceForm.dispTrainingDate}]]</td>
 								<td class="w300">[[${dailyAttendanceForm.sectionName}]]</td>
-								<td class="w70">
+								<td class="w70 form-inline" style="white-space: nowrap;">
 									<input type="text" th:name="|attendanceList[${stat.index}].trainingStartTime|"
-									th:value="${dailyAttendanceForm.trainingStartTime}" class="form-control" />
+									th:value="${dailyAttendanceForm.trainingStartTime}" class="form-control" style="display: none;" />
+									<select th:name="|attendanceList[${stat.index}].trainingStartTimeHour|" class="form-control" style="width: 65px; display: inline-block; padding: 6px 4px;">
+										<option th:each="hour : ${attendanceForm.hourMap}" th:value="${hour.key}" th:text="${hour.value}"
+											th:selected="${hour.key == dailyAttendanceForm.trainingStartTimeHour}"></option>
+									</select>
+									：
+									<select th:name="|attendanceList[${stat.index}].trainingStartTimeMinute|" class="form-control" style="width: 65px; display: inline-block; padding: 6px 4px;">
+										<option th:each="minute : ${attendanceForm.minuteMap}" th:value="${minute.key}" th:text="${minute.value}"
+											th:selected="${minute.key == dailyAttendanceForm.trainingStartTimeMinute}"></option>
+									</select>
 								</td>
-								<td class="w70">
+								
+								<!-- 退勤時間（tdクラスにw180と折り返し防止を追加、select幅を調整） -->
+								<td class="w70 form-inline" style="white-space: nowrap;">
+									<!-- ★ 元のテキスト入力（非表示にして保持） -->
 									<input type="text" th:name="|attendanceList[${stat.index}].trainingEndTime|"
-									th:value="${dailyAttendanceForm.trainingEndTime}" class="form-control" />
+									th:value="${dailyAttendanceForm.trainingEndTime}" class="form-control" style="display: none;" />
+									
+									<!-- ★ プルダウンの追加 -->
+									<select th:name="|attendanceList[${stat.index}].trainingEndTimeHour|" class="form-control" style="width: 65px; display: inline-block; padding: 6px 4px;">
+										<option th:each="hour : ${attendanceForm.hourMap}" th:value="${hour.key}" th:text="${hour.value}"
+											th:selected="${hour.key == dailyAttendanceForm.trainingEndTimeHour}"></option>
+									</select>
+									：
+									<select th:name="|attendanceList[${stat.index}].trainingEndTimeMinute|" class="form-control" style="width: 65px; display: inline-block; padding: 6px 4px;">
+										<option th:each="minute : ${attendanceForm.minuteMap}" th:value="${minute.key}" th:text="${minute.value}"
+											th:selected="${minute.key == dailyAttendanceForm.trainingEndTimeMinute}"></option>
+									</select>
 								</td>
-								<td class="w80">
+								
+								<td class="w120">
 									<select th:name="|attendanceList[${stat.index}].blankTime|" class="form-control">
 										<option th:each="blankTime : ${attendanceForm.blankTimes}" th:value="${blankTime.key}" th:inlne="text" class="form-control" 
 											th:selected="${blankTime.key == dailyAttendanceForm.blankTime}">[[${blankTime.value}]]</option>
