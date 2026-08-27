@@ -231,9 +231,9 @@ public class StudentAttendanceService {
 		for (int i = 0; i < 60; i++) {
 			minuteMap.put(i, String.format("%02d", i));
 		}
-		
+
 		attendanceForm.setHourMap(hourMap);
-	    attendanceForm.setMinuteMap(minuteMap);
+		attendanceForm.setMinuteMap(minuteMap);
 
 		attendanceForm.setAttendanceList(new ArrayList<DailyAttendanceForm>());
 		attendanceForm.setLmsUserId(loginUserDto.getLmsUserId());
@@ -405,9 +405,14 @@ public class StudentAttendanceService {
 		// 完了メッセージ
 		return messageUtil.getMessage(Constants.PROP_KEY_ATTENDANCE_UPDATE_NOTICE);
 	}
-	
 
-	public boolean notEnterCheck() throws ParseException {
+	/**
+	 * 過去日勤怠未入力チェック
+	 * 
+	 * @return 過去日の勤怠情報に未入力がある場合は true、それ以外は false
+	 * @throws ParseException 日付変換処理でエラーが発生した場合
+	 */
+	public Boolean notEnterCheck() throws ParseException {
 		//Task.25 フォーマットの指定
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
 		//Task.25 本日の日付を取得しtrainingDateに格納
