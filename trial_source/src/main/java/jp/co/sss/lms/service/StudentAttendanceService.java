@@ -405,16 +405,23 @@ public class StudentAttendanceService {
 		// 完了メッセージ
 		return messageUtil.getMessage(Constants.PROP_KEY_ATTENDANCE_UPDATE_NOTICE);
 	}
+	
 
 	public boolean notEnterCheck() throws ParseException {
+		//Task.25 フォーマットの指定
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+		//Task.25 本日の日付を取得しtrainingDateに格納
 		String trainingDate = sdf.format(new Date());
 
+		//セッション情報から、ログインしている受講生のIDを取得しlmsUserIdに格納
 		Integer lmsUserId = loginUserDto.getLmsUserId();
+		//削除されていないレコードを検索するため0
 		Short deleteFlg = 0;
 
+		//3つのパラメータをMapperへ渡し、過去日の未入力件数を取得する
 		int count = tStudentAttendanceMapper.notEnterCount(lmsUserId, deleteFlg, trainingDate);
 
+		//過去日の未入力があるかどうかを判断し、コントローラーへ返却する
 		return count > 0;
 	}
 
