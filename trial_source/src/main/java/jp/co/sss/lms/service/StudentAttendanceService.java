@@ -11,6 +11,7 @@ import java.util.Map;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.BindingResult;
 
 import jp.co.sss.lms.dto.AttendanceManagementDto;
 import jp.co.sss.lms.dto.LoginUserDto;
@@ -218,28 +219,28 @@ public class StudentAttendanceService {
 
 		AttendanceForm attendanceForm = new AttendanceForm();
 
-		// Task.26:　時間マップ（00～23）を生成
+		// Task.26: 時間マップ（00～23）を生成
 		Map<Integer, String> hourMap = new LinkedHashMap<>();
 		hourMap.put(null, "");
 		for (int i = 0; i < 24; i++) {
 			hourMap.put(i, String.format("%02d", i));
 		}
 
-		// Task.26:　分マップ（00～59）を生成
+		// Task.26: 分マップ（00～59）を生成
 		Map<Integer, String> minuteMap = new LinkedHashMap<>();
 		minuteMap.put(null, "");
 		for (int i = 0; i < 60; i++) {
 			minuteMap.put(i, String.format("%02d", i));
 		}
 
+		// フォームへマップと基本情報をセット
 		attendanceForm.setHourMap(hourMap);
 		attendanceForm.setMinuteMap(minuteMap);
-
+		attendanceForm.setBlankTimes(attendanceUtil.setBlankTime());
 		attendanceForm.setAttendanceList(new ArrayList<DailyAttendanceForm>());
 		attendanceForm.setLmsUserId(loginUserDto.getLmsUserId());
 		attendanceForm.setUserName(loginUserDto.getUserName());
 		attendanceForm.setLeaveFlg(loginUserDto.getLeaveFlg());
-		attendanceForm.setBlankTimes(attendanceUtil.setBlankTime());
 
 		// 途中退校している場合のみ設定
 		if (loginUserDto.getLeaveDate() != null) {
@@ -260,7 +261,7 @@ public class StudentAttendanceService {
 					.setTrainingStartTime(attendanceManagementDto.getTrainingStartTime());
 			dailyAttendanceForm.setTrainingEndTime(attendanceManagementDto.getTrainingEndTime());
 
-			//Task.26:　出勤時刻文字列("HH:mm")を「時」と「分」に分解してセット
+			// Task.26: 出勤時刻文字列("HH:mm")を「時」と「分」に分解してセット
 			String startTime = attendanceManagementDto.getTrainingStartTime();
 			if (startTime != null && !startTime.isEmpty() && startTime.contains(":")) {
 				String[] startArr = startTime.split(":");
@@ -430,4 +431,73 @@ public class StudentAttendanceService {
 		return count > 0;
 	}
 
+	/**
+	 * Task.27 勤怠入力チェック
+	 * 
+	 * @param attendanceForm 勤怠フォーム
+	 * @param result バインディング結果
+	 */
+	public void updateInputCheck(AttendanceForm attendanceForm, BindingResult result) {
+		List<DailyAttendanceForm> dailyList = attendanceForm.getAttendanceList();
+		if (dailyList == null) {
+			return;
+		}
+
+		for (int n = 0; n < dailyList.size(); n++) {
+			DailyAttendanceForm daily = dailyList.get(n);
+
+			// a. 備考の文字数 > 100 の場合
+			if (daily.getNote() != null && daily.getNote().length() > 100) {
+				result.rejectValue("attendanceList[" + n + "].note", "maxlength", new Object[] { "備考", "100" }, null);
+			}
+
+			// Integer型のヌルチェック (nullでなければ入力あり)
+			boolean hasStartHour = daily.getTrainingStartTimeHour() != null;
+			boolean hasStartMin = daily.getTrainingStartTimeMinute() != null;
+			boolean hasEndHour = daily.getTrainingEndTimeHour() != null;
+			boolean hasEndMin = daily.getTrainingEndTimeMinute() != null;
+
+			// b. 出勤時間の片側未入力チェック (XOR演算子)
+			if ((hasStartHour && !hasStartMin) || (!hasStartHour && hasStartMin)) {
+				result.rejectValue("attendanceList[" + n + "].trainingStartTimeHour", "input.invalid",
+						new Object[] { "出勤時間" }, null);
+			}
+			// c. 退勤時間の片側未入力チェック (XOR演算子)
+			if ((hasEndHour && !hasEndMin) || (!hasEndHour && hasEndMin)) {
+				result.rejectValue("attendanceList[" + n + "].trainingEndTimeHour", "input.invalid",
+						new Object[] { "退勤時間" }, null);
+			}
+			boolean isStartComplete = hasStartHour && hasStartMin;
+			boolean isEndComplete = hasEndHour && hasEndMin;
+
+			// d. 「出勤なし、退勤あり」の矛盾チェック
+			if (!isStartComplete && isEndComplete) {
+				result.rejectValue("attendanceList[" + n + "].trainingStartTimeHour", "attendance.punchInEmpty", null,
+						null);
+			}
+
+			// 出勤・退勤の両方が入力されている場合のみ時刻整合性チェック
+			if (isStartComplete && isEndComplete) {
+				int startTotalMinutes = daily.getTrainingStartTimeHour() * 60 + daily.getTrainingStartTimeMinute();
+				int endTotalMinutes = daily.getTrainingEndTimeHour() * 60 + daily.getTrainingEndTimeMinute();
+
+				// e. 出勤時間 > 退勤時間 の場合
+				// e. 出勤時間 > 退勤時間 の場合
+				if (startTotalMinutes > endTotalMinutes) {
+					result.rejectValue("attendanceList[" + n + "].trainingStartTimeHour",
+							"attendance.trainingTimeRange", new Object[] { n }, null);
+				}
+				// f. 中抜け時間が勤務時間(出勤〜退勤)を超える場合
+				if (daily.getBlankTime() != null) {
+					int workMinutes = endTotalMinutes - startTotalMinutes;
+					int blankMinutes = daily.getBlankTime();
+
+					if (blankMinutes > workMinutes) {
+						result.rejectValue("attendanceList[" + n + "].blankTime", "attendance.blankTimeError", null,
+								null);
+					}
+				}
+			}
+		}
+	}
 }

@@ -35,8 +35,6 @@ public class AttendanceController {
 	/**
 	 * 勤怠管理画面 初期表示
 	 * 
-	 * @param lmsUserId
-	 * @param courseId
 	 * @param model
 	 * @return 勤怠管理画面
 	 * @throws ParseException
@@ -49,7 +47,7 @@ public class AttendanceController {
 				.getAttendanceManagement(loginUserDto.getCourseId(), loginUserDto.getLmsUserId());
 		model.addAttribute("attendanceManagementDtoList", attendanceManagementDtoList);
 
-		//Task.25 過去日に勤怠未入力が存在するかどうかを判定し、真偽を返す
+		// Task.25 過去日に勤怠未入力が存在するかどうかを判定し、真偽を返す
 		Boolean hasNotEnter = studentAttendanceService.notEnterCheck();
 		model.addAttribute("hasNotEnter", hasNotEnter);
 		return "attendance/detail";
@@ -129,21 +127,37 @@ public class AttendanceController {
 	 * 勤怠情報直接変更画面 『更新』ボタン押下
 	 * 
 	 * @param attendanceForm
-	 * @param model
 	 * @param result
+	 * @param model
 	 * @return 勤怠管理画面
 	 * @throws ParseException
 	 */
 	@RequestMapping(path = "/update", params = "complete", method = RequestMethod.POST)
-	public String complete(@Valid @ModelAttribute("attendanceForm") AttendanceForm attendanceForm, Model model, BindingResult result)
-			throws ParseException {
+	public String complete(@Valid @ModelAttribute("attendanceForm") AttendanceForm attendanceForm,
+			BindingResult result, Model model) throws ParseException {
 
-		// Task.26: 出勤/退勤時間をhh:mm形式に設定
+		// 1. 出勤/退勤時間をhh:mm形式に設定
 		studentAttendanceService.formatConversion(attendanceForm);
-		
-		// 更新
+
+		// 2. 相関チェック（入力チェック）を必ず実行
+		studentAttendanceService.updateInputCheck(attendanceForm, result);
+
+		// 3. 単体チェック（@Valid）および相関チェックのエラーをまとめて判定
+		if (result.hasErrors()) {
+			// マップの再セット（プルダウン表示用の選択肢を復元）
+			List<AttendanceManagementDto> list = studentAttendanceService
+					.getAttendanceManagement(loginUserDto.getCourseId(), loginUserDto.getLmsUserId());
+			AttendanceForm defaultForm = studentAttendanceService.setAttendanceForm(list);
+			attendanceForm.setBlankTimes(defaultForm.getBlankTimes());
+			attendanceForm.setHourMap(defaultForm.getHourMap());
+			attendanceForm.setMinuteMap(defaultForm.getMinuteMap());
+			return "attendance/update";
+		}
+
+		// 4. エラーがなければ更新処理を実行
 		String message = studentAttendanceService.update(attendanceForm);
 		model.addAttribute("message", message);
+
 		// 一覧の再取得
 		List<AttendanceManagementDto> attendanceManagementDtoList = studentAttendanceService
 				.getAttendanceManagement(loginUserDto.getCourseId(), loginUserDto.getLmsUserId());

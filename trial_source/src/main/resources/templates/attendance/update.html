@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" 
-	th:replace="~{/common/layout :: layout(~{::title},~{::body/content()})}">
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{/common/layout :: layout(~{::title},~{::body/content()})}">
+
 <head>
-<meta charset="UTF-8">
-<title>勤怠情報変更｜LMS</title>
+	<meta charset="UTF-8">
+	<title>勤怠情報変更｜LMS</title>
 </head>
+
 <body>
 
 	<th:block th:if="${session.loginUserDto.role == '0001'}">
@@ -21,7 +22,14 @@
 	<div class="row">
 		<div class="bs-component col-sm-12">
 
-			<form th:action="@{/attendance/update}" method="post">
+			<form th:action="@{/attendance/update}" th:object="${attendanceForm}" method="post">
+				
+				<div th:if="${#fields.hasAnyErrors()}" style="color: #a94442; margin-bottom: 15px;">
+					<ul style="list-style: none; padding-left: 0; font-weight: bold;">
+						<li th:each="err : ${#fields.allErrors()}" th:text="'* ' + ${err}"></li>
+					</ul>
+				</div>
+
 				<table class="table table-hover dataTable no-footer">
 					<thead>
 						<tr>
@@ -35,59 +43,90 @@
 						</tr>
 					</thead>
 					<tbody>
-						<th:block th:each="dailyAttendanceForm, stat : *{attendanceForm.attendanceList}">
+						<th:block th:each="dailyAttendanceForm, stat : *{attendanceList}">
 							<tr>
 								<th:block>
-									<input type="hidden" th:name="|attendanceList[${stat.index}].isToday|" th:value="${dailyAttendanceForm.isToday}" />
-									<input type="hidden" th:name="|attendanceList[${stat.index}].studentAttendanceId|" th:value="${dailyAttendanceForm.studentAttendanceId}" />
-									<input type="hidden" th:name="|attendanceList[${stat.index}].trainingDate|" th:value="${dailyAttendanceForm.trainingDate}" />
-									<input type="hidden" th:name="|attendanceList[${stat.index}].dispTrainingDate|" th:value="${dailyAttendanceForm.dispTrainingDate}" />
-									<input type="hidden" th:name="|attendanceList[${stat.index}].sectionName|" th:value="${dailyAttendanceForm.sectionName}" />
-									<input type="hidden" th:name="|attendanceList[${stat.index}].statusDispName|" th:value="${dailyAttendanceForm.statusDispName}" />
+									<input type="hidden" th:name="|attendanceList[${stat.index}].isToday|"
+										th:value="${dailyAttendanceForm.isToday}" />
+									<input type="hidden" th:name="|attendanceList[${stat.index}].studentAttendanceId|"
+										th:value="${dailyAttendanceForm.studentAttendanceId}" />
+									<input type="hidden" th:name="|attendanceList[${stat.index}].trainingDate|"
+										th:value="${dailyAttendanceForm.trainingDate}" />
+									<input type="hidden" th:name="|attendanceList[${stat.index}].dispTrainingDate|"
+										th:value="${dailyAttendanceForm.dispTrainingDate}" />
+									<input type="hidden" th:name="|attendanceList[${stat.index}].sectionName|"
+										th:value="${dailyAttendanceForm.sectionName}" />
+									<input type="hidden" th:name="|attendanceList[${stat.index}].statusDispName|"
+										th:value="${dailyAttendanceForm.statusDispName}" />
 								</th:block>
 								<td class="w140">[[${dailyAttendanceForm.dispTrainingDate}]]</td>
 								<td class="w300">[[${dailyAttendanceForm.sectionName}]]</td>
+
+								<!-- 出勤時間 -->
 								<td class="w70 form-inline" style="white-space: nowrap;">
 									<input type="text" th:name="|attendanceList[${stat.index}].trainingStartTime|"
-									th:value="${dailyAttendanceForm.trainingStartTime}" class="form-control" style="display: none;" />
-									<select th:name="|attendanceList[${stat.index}].trainingStartTimeHour|" class="form-control" style="width: 65px; display: inline-block; padding: 6px 4px;">
-										<option th:each="hour : ${attendanceForm.hourMap}" th:value="${hour.key}" th:text="${hour.value}"
-											th:selected="${hour.key == dailyAttendanceForm.trainingStartTimeHour}"></option>
+										th:value="${dailyAttendanceForm.trainingStartTime}" class="form-control"
+										style="display: none;" />
+									<select th:name="|attendanceList[${stat.index}].trainingStartTimeHour|"
+										class="form-control"
+										style="width: 65px; display: inline-block; padding: 6px 4px;">
+										<option th:each="hour : ${attendanceForm.hourMap}" th:value="${hour.key}"
+											th:text="${hour.value}"
+											th:selected="${hour.key == dailyAttendanceForm.trainingStartTimeHour}">
+										</option>
 									</select>
 									：
-									<select th:name="|attendanceList[${stat.index}].trainingStartTimeMinute|" class="form-control" style="width: 65px; display: inline-block; padding: 6px 4px;">
-										<option th:each="minute : ${attendanceForm.minuteMap}" th:value="${minute.key}" th:text="${minute.value}"
-											th:selected="${minute.key == dailyAttendanceForm.trainingStartTimeMinute}"></option>
+									<select th:name="|attendanceList[${stat.index}].trainingStartTimeMinute|"
+										class="form-control"
+										style="width: 65px; display: inline-block; padding: 6px 4px;">
+										<option th:each="minute : ${attendanceForm.minuteMap}" th:value="${minute.key}"
+											th:text="${minute.value}"
+											th:selected="${minute.key == dailyAttendanceForm.trainingStartTimeMinute}">
+										</option>
 									</select>
 								</td>
-								
-								<!-- 退勤時間（tdクラスにw180と折り返し防止を追加、select幅を調整） -->
+
+								<!-- 退勤時間 -->
 								<td class="w70 form-inline" style="white-space: nowrap;">
-									<!-- ★ 元のテキスト入力（非表示にして保持） -->
 									<input type="text" th:name="|attendanceList[${stat.index}].trainingEndTime|"
-									th:value="${dailyAttendanceForm.trainingEndTime}" class="form-control" style="display: none;" />
-									
-									<!-- ★ プルダウンの追加 -->
-									<select th:name="|attendanceList[${stat.index}].trainingEndTimeHour|" class="form-control" style="width: 65px; display: inline-block; padding: 6px 4px;">
-										<option th:each="hour : ${attendanceForm.hourMap}" th:value="${hour.key}" th:text="${hour.value}"
-											th:selected="${hour.key == dailyAttendanceForm.trainingEndTimeHour}"></option>
+										th:value="${dailyAttendanceForm.trainingEndTime}" class="form-control"
+										style="display: none;" />
+
+									<select th:name="|attendanceList[${stat.index}].trainingEndTimeHour|"
+										class="form-control"
+										style="width: 65px; display: inline-block; padding: 6px 4px;">
+										<option th:each="hour : ${attendanceForm.hourMap}" th:value="${hour.key}"
+											th:text="${hour.value}"
+											th:selected="${hour.key == dailyAttendanceForm.trainingEndTimeHour}">
+										</option>
 									</select>
 									：
-									<select th:name="|attendanceList[${stat.index}].trainingEndTimeMinute|" class="form-control" style="width: 65px; display: inline-block; padding: 6px 4px;">
-										<option th:each="minute : ${attendanceForm.minuteMap}" th:value="${minute.key}" th:text="${minute.value}"
-											th:selected="${minute.key == dailyAttendanceForm.trainingEndTimeMinute}"></option>
+									<select th:name="|attendanceList[${stat.index}].trainingEndTimeMinute|"
+										class="form-control"
+										style="width: 65px; display: inline-block; padding: 6px 4px;">
+										<option th:each="minute : ${attendanceForm.minuteMap}" th:value="${minute.key}"
+											th:text="${minute.value}"
+											th:selected="${minute.key == dailyAttendanceForm.trainingEndTimeMinute}">
+										</option>
 									</select>
 								</td>
-								
+
+								<!-- 中抜け時間 -->
 								<td class="w120">
 									<select th:name="|attendanceList[${stat.index}].blankTime|" class="form-control">
-										<option th:each="blankTime : ${attendanceForm.blankTimes}" th:value="${blankTime.key}" th:inlne="text" class="form-control" 
-											th:selected="${blankTime.key == dailyAttendanceForm.blankTime}">[[${blankTime.value}]]</option>
+										<option th:each="blankTime : ${attendanceForm.blankTimes}"
+											th:value="${blankTime.key}" th:inlne="text" class="form-control"
+											th:selected="${blankTime.key == dailyAttendanceForm.blankTime}">
+											[[${blankTime.value}]]</option>
 									</select>
 								</td>
+
 								<td class="w70">[[${dailyAttendanceForm.statusDispName}]]</td>
+
+								<!-- 備考 -->
 								<td class="w240">
-									<input type="text" th:name="|attendanceList[${stat.index}].note|" th:value="${dailyAttendanceForm.note}" class="form-control"></input>
+									<input type="text" th:name="|attendanceList[${stat.index}].note|"
+										th:value="${dailyAttendanceForm.note}" class="form-control" />
 								</td>
 							</tr>
 						</th:block>
@@ -101,12 +140,25 @@
 					<th:block th:if="${session.loginUserDto.role != '0001'}">
 						<input type="submit" value="戻る" name="indexCompany" class="btn btn-default" />
 					</th:block>
-					<input type="submit" value="更新" name="complete" class="btn btn-info" />
+					<input type="submit" value="更新" id="updateButton" name="complete" class="btn btn-info" />
 				</div>
 
 			</form>
 		</div>
 	</div>
+	<script type="text/javascript">
+		document.addEventListener('DOMContentLoaded', function () {
+			var updateButton = document.getElementById('updateButton');
+			if (updateButton) {
+				updateButton.addEventListener('click', function (event) {
+					if (!confirm('更新します。よろしいですか？')) {
+						event.preventDefault();
+					}
+				});
+			}
+		});
+	</script>
 
 </body>
+
 </html>
